@@ -1,0 +1,1662 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu Exam - Online Examination System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f1f5f9;
+        }
+
+        /* Anti-cheating utility styles */
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(6px);
+        }
+
+        /* Optical scanning animation keyframes */
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 90%; }
+            100% { top: 0%; }
+        }
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent);
+            box-shadow: 0 0 15px #3b82f6;
+            animation: scan 2.5s ease-in-out infinite;
+        }
+
+        @media print {
+            header, button, .no-print {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .bg-slate-900, .bg-slate-950 {
+                background: #ffffff !important;
+                border: 1px solid #cccccc !important;
+                color: #000000 !important;
+            }
+            .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+                color: #000000 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased bg-slate-950 text-slate-100">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-brand-500/20">
+                    <i class="fa-solid text-lg fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-none text-white tracking-wide">Edu Exam</h1>
+                    <span class="text-xs text-slate-400 font-medium">Online Examination & Assessment System</span>
+                </div>
+            </div>
+
+            <!-- Role Switcher Tabs -->
+            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button id="nav-btn-student" onclick="switchRole('student')" class="px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-user-graduate mr-1.5"></i>Student Portal
+                </button>
+                <button id="nav-btn-admin" onclick="switchRole('admin')" class="px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-lock mr-1.5 text-amber-400"></i>Admin Panel
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ==================== ADMIN PANEL ==================== -->
+        <div id="admin-panel-section" class="space-y-6 hidden">
+            <!-- Top Dashboard Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Exams</span>
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-file-signature"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-white mt-2" id="stat-total-exams">0</div>
+                </div>
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Submissions</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-square-check"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-white mt-2" id="stat-total-submissions">0</div>
+                </div>
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Average Score</span>
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center"><i class="fa-solid fa-chart-line"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-white mt-2" id="stat-avg-score">0%</div>
+                </div>
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Violations</span>
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-amber-400 mt-2" id="stat-total-violations">0</div>
+                </div>
+            </div>
+
+            <!-- Create New Exam Form -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center">
+                            <i class="fa-solid fa-wand-magic-sparkles text-brand-500 mr-2"></i>Create New Question Paper
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Generate questions automatically with AI or scan question papers with camera</p>
+                    </div>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Subject</label>
+                            <input type="text" id="adm-subject" value="General Knowledge & ICT" class="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Grade / Level</label>
+                            <input type="text" id="adm-class" value="Grade 10" class="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Chapter / Topic</label>
+                            <input type="text" id="adm-topic" value="World History & Tech" class="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        </div>
+                        <!-- Language Option -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Question Language <span class="text-brand-400">*</span></label>
+                            <select id="adm-language" class="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all font-semibold">
+                                <option value="en" selected>English</option>
+                                <option value="bn">Bengali (বাংলা)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Difficulty Level</label>
+                            <select id="adm-difficulty" class="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                                <option value="Easy">Easy</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Number of Questions</label>
+                            <input type="number" id="adm-qcount" value="10" min="1" max="50" class="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Time Limit (Minutes)</label>
+                            <input type="number" id="adm-duration" value="15" min="1" max="180" class="w-full px-3.5 py-2 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex flex-col sm:flex-row justify-end items-center gap-3">
+                        <!-- Camera / Scan Option Button -->
+                        <button onclick="openCameraScanModal()" id="btn-camera-scan" class="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-sm font-semibold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-camera text-amber-400"></i>
+                            <span>Scan Question Paper</span>
+                        </button>
+
+                        <!-- AI Question Generation Button -->
+                        <button onclick="handleGenerateAIQuestions()" id="btn-generate-ai" class="w-full sm:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Generate Questions</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Draft / Preview Questions Editor Section -->
+            <div id="ai-questions-editor" class="bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden hidden">
+                <div class="p-6 border-b border-slate-800 bg-slate-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center">
+                            <i class="fa-solid fa-list-check text-emerald-400 mr-2"></i>Draft Question Paper Editor
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5" id="draft-meta-subtitle">Edit or customize questions before publishing the exam</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="downloadDraftQuestionsJSON()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-xl transition-all flex items-center">
+                            <i class="fa-solid fa-download mr-1.5"></i>Download JSON
+                        </button>
+                        <button onclick="addNewBlankQuestion()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-all flex items-center">
+                            <i class="fa-solid fa-plus mr-1.5"></i>Add Question
+                        </button>
+                        <button onclick="publishCurrentExam()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center">
+                            <i class="fa-solid fa-paper-plane mr-1.5"></i>Publish Exam
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div id="questions-draft-container" class="space-y-4">
+                        <!-- Questions dynamically rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Published Exams List & Results Table -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-800 bg-slate-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center">
+                            <i class="fa-solid fa-chart-user text-indigo-400 mr-2"></i>Examinee Results & Records
+                        </h3>
+                        <span class="text-xs text-slate-400">Live submission history</span>
+                    </div>
+                    <!-- Download CSV Button -->
+                    <button onclick="exportResultsToCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center self-start sm:self-auto">
+                        <i class="fa-solid fa-file-csv text-sm mr-2"></i>Export Results (CSV)
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm text-slate-300">
+                        <thead class="bg-slate-950/80 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                            <tr>
+                                <th class="px-6 py-3.5">Student Name</th>
+                                <th class="px-6 py-3.5">Roll Number</th>
+                                <th class="px-6 py-3.5">Exam Title</th>
+                                <th class="px-6 py-3.5">Score</th>
+                                <th class="px-6 py-3.5">Percentage (%)</th>
+                                <th class="px-6 py-3.5">Time Taken</th>
+                                <th class="px-6 py-3.5">Tab Switches</th>
+                                <th class="px-6 py-3.5">Submission Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-results-table-body" class="divide-y divide-slate-800/60">
+                            <!-- Filled dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== STUDENT PANEL ==================== -->
+        <div id="student-panel-section" class="space-y-6">
+            
+            <!-- Student Header Banner -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-sm flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-brand-400 font-semibold">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-white">Student Examination Portal</div>
+                        <div class="text-xs text-slate-400">Select an available exam from the list below to begin</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Exams Card List View -->
+            <div id="exam-list-container" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-white">Available Exams</h2>
+                    <span class="text-xs text-slate-400" id="available-exams-count">0 Exams Available</span>
+                </div>
+                <div id="available-exams-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamic Exam Cards -->
+                </div>
+            </div>
+
+            <!-- Active Exam Taking Canvas (Initially Hidden) -->
+            <div id="active-exam-canvas" class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden hidden no-select">
+                <!-- Exam Top Control Bar -->
+                <div class="p-4 sm:p-6 border-b border-slate-800 bg-slate-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-16 z-20">
+                    <div>
+                        <span class="inline-block px-2.5 py-0.5 rounded-md bg-brand-500/20 text-brand-300 text-xs font-semibold uppercase tracking-wider mb-1" id="exam-badge-subject">Subject</span>
+                        <h2 class="text-base sm:text-lg font-bold text-white leading-tight" id="exam-canvas-title">Exam Title</h2>
+                        <div class="text-xs text-slate-400 mt-1 flex items-center space-x-3">
+                            <span id="exam-canvas-student-info" class="text-brand-400 font-semibold">Name (Roll: --)</span>
+                            <span>•</span>
+                            <span id="exam-canvas-progress">Question 1 / 10</span>
+                        </div>
+                    </div>
+                    <!-- Synced Real-time Countdown Timer -->
+                    <div class="flex items-center justify-between sm:justify-end space-x-3 bg-slate-900 px-4 py-2.5 rounded-xl border border-slate-800">
+                        <i class="fa-solid fa-stopwatch text-amber-400 text-lg animate-pulse"></i>
+                        <div class="text-right">
+                            <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold leading-none">Time Remaining</div>
+                            <div class="text-lg sm:text-xl font-mono font-bold text-amber-300 leading-tight mt-0.5" id="live-timer-display">15:00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anti-cheating Notification Header -->
+                <div class="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-xs text-amber-300">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                        <span><strong>Anti-Cheating Mode Active:</strong> Copying, right-clicking, and tab switching are strictly monitored.</span>
+                    </div>
+                    <span id="tab-switch-badge" class="font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">Tab Switches: 0/3</span>
+                </div>
+
+                <!-- Question & Options Area -->
+                <div class="p-6 sm:p-8 max-w-3xl mx-auto">
+                    <div id="question-display-card" class="space-y-6">
+                        <div class="text-sm font-semibold text-brand-400 uppercase tracking-wider" id="q-number-header">Question 1</div>
+                        <h3 class="text-lg sm:text-xl font-bold text-white leading-snug" id="q-text-display">Loading question...</h3>
+
+                        <!-- MCQ Options Stack -->
+                        <div class="space-y-3 pt-2" id="q-options-container">
+                            <!-- Options generated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Exam Action Navigation Controls -->
+                    <div class="mt-8 pt-6 border-t border-slate-800 flex items-center justify-between">
+                        <button id="btn-prev-question" onclick="navigateQuestion(-1)" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center">
+                            <i class="fa-solid fa-arrow-left mr-2"></i>Previous
+                        </button>
+                        <div class="flex items-center space-x-3">
+                            <button id="btn-next-question" onclick="navigateQuestion(1)" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all flex items-center">
+                                Next<i class="fa-solid fa-arrow-right ml-2"></i>
+                            </button>
+                            <button id="btn-submit-exam" onclick="promptSubmitConfirmation()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all hidden flex items-center">
+                                <i class="fa-solid fa-check-double mr-2"></i>Submit Exam
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exam Result & Solution Review View -->
+            <div id="exam-result-view" class="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg overflow-hidden hidden">
+                <div class="p-6 sm:p-8 bg-slate-950 text-white border-b border-slate-800">
+                    <div class="max-w-3xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-2">Exam Completed</span>
+                            <h2 class="text-2xl font-bold text-white" id="res-exam-title">Exam Title</h2>
+                            <p class="text-xs text-slate-400 mt-1" id="res-submitted-info">Student: Name (Roll) - Date: --</p>
+                        </div>
+                        <div class="flex items-center space-x-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                            <div class="text-center px-2">
+                                <div class="text-3xl font-black text-emerald-400" id="res-score-number">0/0</div>
+                                <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-1">Score Obtained</div>
+                            </div>
+                            <div class="h-10 w-px bg-slate-800"></div>
+                            <div class="text-center px-2">
+                                <div class="text-3xl font-black text-brand-400" id="res-percent-number">0%</div>
+                                <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mt-1">Percentage</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result Breakdown Cards -->
+                <div class="p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl text-center">
+                            <div class="text-xs text-slate-400 font-medium">Correct Answers</div>
+                            <div class="text-xl font-bold text-emerald-400 mt-1" id="res-correct-count">0</div>
+                        </div>
+                        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl text-center">
+                            <div class="text-xs text-slate-400 font-medium">Incorrect Answers</div>
+                            <div class="text-xl font-bold text-rose-400 mt-1" id="res-wrong-count">0</div>
+                        </div>
+                        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl text-center">
+                            <div class="text-xs text-slate-400 font-medium">Time Taken</div>
+                            <div class="text-xl font-bold text-slate-200 mt-1" id="res-time-taken">00:00</div>
+                        </div>
+                        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl text-center">
+                            <div class="text-xs text-slate-400 font-medium">Violations</div>
+                            <div class="text-xl font-bold text-amber-400 mt-1" id="res-violations-count">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Questions & Answers Explanations Review -->
+                    <div class="space-y-4 pt-4 border-t border-slate-800">
+                        <h3 class="text-base font-bold text-white flex items-center justify-between">
+                            <span>Question Breakdown & Solutions</span>
+                        </h3>
+                        
+                        <div id="review-questions-stack" class="space-y-4">
+                            <!-- Dynamic Solution Review Cards -->
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex items-center justify-between">
+                        <button onclick="window.print()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition-all flex items-center">
+                            <i class="fa-solid fa-print mr-2"></i>Print / Save PDF
+                        </button>
+                        <button onclick="backToStudentExamsList()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all">
+                            Back to Exam List
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Camera / Image Scan Modal -->
+    <div id="camera-scan-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-800 space-y-4 text-white">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <h3 class="text-base font-bold">Scan Question Paper via Camera or File</h3>
+                </div>
+                <button onclick="closeCameraScanModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Take a picture of your paper or select an image from your device. The optical scanner will parse the document into editable questions.
+            </p>
+
+            <!-- Upload / Capture Area -->
+            <div class="space-y-3">
+                <div class="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-2xl p-6 text-center bg-slate-950 relative cursor-pointer transition-all" onclick="triggerFileInput()">
+                    <input type="file" id="scan-image-input" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(event)">
+                    
+                    <div id="scan-placeholder" class="space-y-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-brand-400"></i>
+                        <div class="text-xs font-semibold text-slate-200">Click to upload or capture a photo</div>
+                        <div class="text-[11px] text-slate-400">Supported Formats: JPG, PNG, WEBP</div>
+                    </div>
+
+                    <div id="scan-preview-container" class="hidden relative">
+                        <img id="scan-preview-img" class="max-h-56 mx-auto rounded-lg object-contain shadow-md" alt="Scanned paper preview">
+                        <div id="scanner-overlay" class="hidden absolute inset-0 overflow-hidden rounded-lg">
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scanning Progress Indicator -->
+                <div id="scan-status-box" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span id="scan-status-text" class="text-amber-400 font-medium"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Scanning document text...</span>
+                        <span id="scan-status-percent" class="font-mono text-brand-400 font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="scan-progress-bar" class="bg-brand-500 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button onclick="closeCameraScanModal()" class="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="startImageScanningProcess()" id="btn-start-scan" disabled class="px-5 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center">
+                    <i class="fa-solid fa-microscope mr-1.5"></i>Start Scan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Name & Roll Entry Modal -->
+    <div id="student-entry-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-800 space-y-4">
+            <div class="flex items-center space-x-3 text-white">
+                <div class="w-10 h-10 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-id-card text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold leading-tight">Examinee Details</h3>
+                    <p class="text-xs text-slate-400">Please enter your name and roll number before starting</p>
+                </div>
+            </div>
+            
+            <div class="space-y-3 pt-2">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Full Name *</label>
+                    <input type="text" id="input-student-name" placeholder="e.g. Sarah Jenkins" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-white rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Roll / ID Number *</label>
+                    <input type="text" id="input-student-roll" placeholder="e.g. 10234" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-white rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button onclick="closeStudentEntryModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all">Cancel</button>
+                <button onclick="confirmStartExamWithInfo()" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center">
+                    <i class="fa-solid fa-play mr-1.5"></i>Start Exam
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin PIN Authentication Modal -->
+    <div id="admin-passcode-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-800 space-y-4">
+            <div class="flex items-center space-x-3 text-white">
+                <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-lock text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold leading-tight">Admin Passcode Required</h3>
+                    <p class="text-xs text-slate-400">Enter PIN to unlock Admin Panel (Default: 19523)</p>
+                </div>
+            </div>
+            
+            <div class="pt-2">
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Passcode (PIN)</label>
+                <input type="password" id="input-admin-passcode" placeholder="Enter PIN" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 text-white text-center tracking-widest text-lg font-bold rounded-xl outline-none focus:ring-2 focus:ring-brand-500">
+                <p id="admin-pass-error" class="text-xs text-rose-400 mt-1 hidden">Invalid PIN! Please try again.</p>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="closeAdminPassModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="verifyAdminPasscode()" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all">
+                    Unlock Panel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal Dialogs -->
+    <div id="custom-modal-backdrop" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-800 space-y-4 transform transition-all">
+            <div class="flex items-center space-x-3 text-white">
+                <div id="modal-icon-container" class="w-10 h-10 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center flex-shrink-0">
+                    <i id="modal-icon" class="fa-solid fa-circle-info text-lg"></i>
+                </div>
+                <h3 id="modal-title" class="text-lg font-bold leading-tight">Notification</h3>
+            </div>
+            <p id="modal-body" class="text-sm text-slate-300 leading-relaxed">Message...</p>
+            <div id="modal-actions" class="flex justify-end space-x-3 pt-2 border-t border-slate-800">
+                <!-- Buttons injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Question Modal (Admin) -->
+    <div id="edit-question-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-800 space-y-4 text-white">
+            <h3 class="text-lg font-bold text-white">Edit Question</h3>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Question Text</label>
+                    <textarea id="edit-q-text" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl outline-none focus:ring-2 focus:ring-brand-500" rows="2"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Option A</label>
+                        <input type="text" id="edit-opt-a" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 text-white rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Option B</label>
+                        <input type="text" id="edit-opt-b" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 text-white rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Option C</label>
+                        <input type="text" id="edit-opt-c" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 text-white rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Option D</label>
+                        <input type="text" id="edit-opt-d" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 text-white rounded-xl">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Correct Answer</label>
+                    <select id="edit-q-correct" class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 text-white rounded-xl">
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Explanation / Solution</label>
+                    <textarea id="edit-q-explain" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 text-white rounded-xl outline-none" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button onclick="closeEditQuestionModal()" class="px-4 py-2 bg-slate-800 text-slate-300 font-semibold text-xs rounded-xl">Cancel</button>
+                <button onclick="saveEditedQuestion()" class="px-5 py-2 bg-brand-600 text-white font-semibold text-xs rounded-xl shadow-md">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= Global System State & Data Bank =================
+        let activeRole = 'student'; // 'student' or 'admin'
+        let isAdminUnlocked = false;
+        const ADMIN_PIN = "19523"; // Admin Lock Passcode
+
+        let pendingExamStartId = null;
+        let publishedExams = [];
+        let draftQuestions = [];
+        let submissionLogs = [];
+        let activeExamState = null;
+        let liveTimerInterval = null;
+        let editingQuestionIndex = null;
+        let selectedScanImageData = null;
+
+        function initSystemState() {
+            const savedExams = localStorage.getItem('edu_published_exams');
+            const savedLogs = localStorage.getItem('edu_submission_logs');
+
+            if (savedExams) {
+                publishedExams = JSON.parse(savedExams);
+            } else {
+                publishedExams = [getSampleStarterExam('en'), getSampleStarterExam('bn')];
+                saveExamsToStorage();
+            }
+
+            if (savedLogs) {
+                submissionLogs = JSON.parse(savedLogs);
+            }
+
+            const savedActiveSession = localStorage.getItem('edu_active_exam_session');
+            if (savedActiveSession) {
+                activeExamState = JSON.parse(savedActiveSession);
+            }
+
+            renderAdminStats();
+            renderAdminResultsTable();
+            renderStudentExamsList();
+            
+            if (activeExamState && !activeExamState.isCompleted) {
+                resumeActiveExamSession();
+            }
+        }
+
+        function saveExamsToStorage() {
+            localStorage.setItem('edu_published_exams', JSON.stringify(publishedExams));
+        }
+
+        function saveLogsToStorage() {
+            localStorage.setItem('edu_submission_logs', JSON.stringify(submissionLogs));
+        }
+
+        function getSampleStarterExam(lang = 'en') {
+            if (lang === 'bn') {
+                return {
+                    id: 'exam_sample_102',
+                    title: 'সাধারণ জ্ঞান ও আইসিটি কুইজ',
+                    subject: 'সাধারণ জ্ঞান',
+                    className: 'দশম শ্রেণি',
+                    topic: 'বাংলাদেশের ইতিহাস ও প্রযুক্তি',
+                    difficulty: 'Medium',
+                    durationMinutes: 15,
+                    language: 'bn',
+                    createdAt: new Date().toISOString(),
+                    questions: generateMockQuestionBank('সাধারণ জ্ঞান', 'বাংলাদেশের ইতিহাস', 10, 'bn')
+                };
+            }
+            return {
+                id: 'exam_sample_101',
+                title: 'General Knowledge & ICT Quiz',
+                subject: 'General Knowledge',
+                className: 'Grade 10',
+                topic: 'World History & ICT Basics',
+                difficulty: 'Medium',
+                durationMinutes: 15,
+                language: 'en',
+                createdAt: new Date().toISOString(),
+                questions: generateMockQuestionBank('General Knowledge', 'World History', 10, 'en')
+            };
+        }
+
+        function showCustomModal({ title, body, icon = 'info', type = 'alert', confirmText = 'OK', cancelText = 'Cancel', onConfirm = null }) {
+            const backdrop = document.getElementById('custom-modal-backdrop');
+            const titleEl = document.getElementById('modal-title');
+            const bodyEl = document.getElementById('modal-body');
+            const iconEl = document.getElementById('modal-icon');
+            const actionsEl = document.getElementById('modal-actions');
+
+            titleEl.innerText = title;
+            bodyEl.innerText = body;
+
+            if (icon === 'warning') {
+                iconEl.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+            } else if (icon === 'success') {
+                iconEl.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else {
+                iconEl.className = 'fa-solid fa-circle-info text-brand-400 text-lg';
+            }
+
+            if (type === 'confirm') {
+                actionsEl.innerHTML = `
+                    <button id="modal-btn-cancel" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all">${cancelText}</button>
+                    <button id="modal-btn-confirm" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all">${confirmText}</button>
+                `;
+                document.getElementById('modal-btn-cancel').onclick = () => {
+                    backdrop.classList.add('hidden');
+                };
+                document.getElementById('modal-btn-confirm').onclick = () => {
+                    backdrop.classList.add('hidden');
+                    if (onConfirm) onConfirm();
+                };
+            } else {
+                actionsEl.innerHTML = `
+                    <button id="modal-btn-ok" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all">${confirmText}</button>
+                `;
+                document.getElementById('modal-btn-ok').onclick = () => {
+                    backdrop.classList.add('hidden');
+                    if (onConfirm) onConfirm();
+                };
+            }
+
+            backdrop.classList.remove('hidden');
+        }
+
+        function openCameraScanModal() {
+            document.getElementById('scan-placeholder').classList.remove('hidden');
+            document.getElementById('scan-preview-container').classList.add('hidden');
+            document.getElementById('scan-status-box').classList.add('hidden');
+            document.getElementById('btn-start-scan').disabled = true;
+            document.getElementById('scan-image-input').value = '';
+            selectedScanImageData = null;
+
+            document.getElementById('camera-scan-modal').classList.remove('hidden');
+        }
+
+        function closeCameraScanModal() {
+            document.getElementById('camera-scan-modal').classList.add('hidden');
+        }
+
+        function triggerFileInput() {
+            document.getElementById('scan-image-input').click();
+        }
+
+        function handleImageSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                selectedScanImageData = evt.target.result;
+                document.getElementById('scan-preview-img').src = selectedScanImageData;
+                document.getElementById('scan-placeholder').classList.add('hidden');
+                document.getElementById('scan-preview-container').classList.remove('hidden');
+                document.getElementById('btn-start-scan').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function startImageScanningProcess() {
+            if (!selectedScanImageData) return;
+
+            const scanOverlay = document.getElementById('scanner-overlay');
+            const statusBox = document.getElementById('scan-status-box');
+            const progressBar = document.getElementById('scan-progress-bar');
+            const statusText = document.getElementById('scan-status-text');
+            const percentText = document.getElementById('scan-status-percent');
+            const btnStart = document.getElementById('btn-start-scan');
+
+            scanOverlay.classList.remove('hidden');
+            statusBox.classList.remove('hidden');
+            btnStart.disabled = true;
+
+            let progress = 0;
+            const steps = [
+                { p: 25, txt: "Scanning document with OCR..." },
+                { p: 55, txt: "Extracting questions and option choices..." },
+                { p: 85, txt: "Formatting answer keys..." },
+                { p: 100, txt: "Scanning completed successfully!" }
+            ];
+
+            let stepIdx = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                if (progress > steps[stepIdx].p && stepIdx < steps.length - 1) {
+                    stepIdx++;
+                }
+
+                progressBar.style.width = `${progress}%`;
+                percentText.innerText = `${progress}%`;
+                statusText.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>${steps[stepIdx].txt}`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        closeCameraScanModal();
+                        
+                        const lang = document.getElementById('adm-language').value;
+                        const count = parseInt(document.getElementById('adm-qcount').value) || 5;
+                        const subject = document.getElementById('adm-subject').value || (lang === 'bn' ? 'স্ক্যানকৃত বিষয়' : 'Scanned Subject');
+                        const topic = document.getElementById('adm-topic').value || (lang === 'bn' ? 'স্ক্যানকৃত অধ্যায়' : 'Scanned Topic');
+
+                        draftQuestions = generateMockQuestionBank(subject, topic, count, lang);
+                        renderDraftQuestions();
+
+                        document.getElementById('ai-questions-editor').classList.remove('hidden');
+                        document.getElementById('draft-meta-subtitle').innerText = `${count} questions scanned and loaded. (Language: ${lang === 'bn' ? 'Bengali' : 'English'})`;
+
+                        showCustomModal({
+                            title: "Scan Successful",
+                            body: `Successfully extracted ${count} questions from the document image and loaded them into draft.`,
+                            icon: "success"
+                        });
+                    }, 500);
+                }
+            }, 120);
+        }
+
+        function handleGenerateAIQuestions() {
+            const subject = document.getElementById('adm-subject').value.trim() || 'General Knowledge';
+            const className = document.getElementById('adm-class').value.trim() || 'Grade 10';
+            const topic = document.getElementById('adm-topic').value.trim() || 'General Topics';
+            const count = parseInt(document.getElementById('adm-qcount').value) || 10;
+            const lang = document.getElementById('adm-language').value;
+
+            const btn = document.getElementById('btn-generate-ai');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>Generating Questions...</span>`;
+
+            setTimeout(() => {
+                draftQuestions = generateMockQuestionBank(subject, topic, count, lang);
+                renderDraftQuestions();
+                
+                document.getElementById('ai-questions-editor').classList.remove('hidden');
+                document.getElementById('draft-meta-subtitle').innerText = `${subject} (${className}) - Topic: ${topic} (${count} Questions - ${lang === 'bn' ? 'Bengali' : 'English'})`;
+
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate Questions</span>`;
+
+                showCustomModal({
+                    title: "Questions Generated",
+                    body: `Successfully generated ${count} questions. You can customize or edit them before publishing.`,
+                    icon: "success"
+                });
+            }, 800);
+        }
+
+        function generateMockQuestionBank(subject, topic, count, lang = 'en') {
+            const questions = [];
+
+            const englishPool = [
+                {
+                    q: "What is the primary processing unit of a computer?",
+                    a: "GPU", b: "Central Processing Unit (CPU)", c: "RAM", d: "Hard Disk",
+                    correct: "B",
+                    explain: "The CPU is known as the brain of the computer that performs core calculations and executes instruction logic."
+                },
+                {
+                    q: "Which protocol is used for encrypted secure web communication?",
+                    a: "HTTP", b: "FTP", c: "HTTPS", d: "SMTP",
+                    correct: "C",
+                    explain: "HTTPS (Hypertext Transfer Protocol Secure) encrypts data transmitted between browser and web server."
+                },
+                {
+                    q: "Which of the following is an input device?",
+                    a: "Monitor", b: "Printer", c: "Keyboard", d: "Speaker",
+                    correct: "C",
+                    explain: "A keyboard captures user keystrokes as digital input into the system."
+                },
+                {
+                    q: "What does 'WWW' stand for in web architecture?",
+                    a: "World Wide Web", b: "World Whole Web", c: "Wide World Web", d: "Web World Wide",
+                    correct: "A",
+                    explain: "WWW stands for World Wide Web, an interconnected web repository of public hypermedia pages."
+                },
+                {
+                    q: "Which memory type retains data temporarily while operating?",
+                    a: "ROM", b: "RAM", c: "SSD", d: "Flash Storage",
+                    correct: "B",
+                    explain: "RAM (Random Access Memory) is volatile temporary storage used by active applications."
+                },
+                {
+                    q: "What is the standard unit for measuring digital data bandwidth speed?",
+                    a: "Gigabytes", b: "Bits per second (bps)", c: "Megahertz", d: "Pixels",
+                    correct: "B",
+                    explain: "Network throughput and bandwidth speeds are traditionally calculated in bits per second (bps)."
+                },
+                {
+                    q: "Which device directs data packets across different computer networks?",
+                    a: "Hub", b: "Switch", c: "Router", d: "Repeater",
+                    correct: "C",
+                    explain: "A router analyzes data packet addresses and forwards them across separate network nodes."
+                }
+            ];
+
+            const banglaPool = [
+                {
+                    q: "কম্পিউটারের প্রধান প্রক্রিয়াকরণ অংশ (CPU) এর পূর্ণরূপ কী?",
+                    a: "Central Performance Unit", b: "Central Processing Unit", c: "Control Power Unit", d: "Core Computer Unit",
+                    correct: "B",
+                    explain: "CPU এর পূর্ণরূপ হলো Central Processing Unit, যাকে কম্পিউটারের মস্তিষ্ক বলা হয়।"
+                },
+                {
+                    q: "নিচের কোনটি একটি ইনপুট ডিভাইস?",
+                    a: "মনিটর", b: "প্রিন্টার", c: "কিবোর্ড", d: "স্পিকার",
+                    correct: "C",
+                    explain: "কিবোর্ডের মাধ্যমে কম্পিউটারে তথ্য প্রদান বা টাইপ করা হয়, তাই এটি ইনপুট ডিভাইস।"
+                },
+                {
+                    q: "বিশ্বজুড়ে নিরাপদ ওয়েব ব্রাউজিংয়ের জন্য কোন প্রোটোকল ব্যবহৃত হয়?",
+                    a: "HTTP", b: "FTP", c: "HTTPS", d: "SMTP",
+                    correct: "C",
+                    explain: "HTTPS (Hypertext Transfer Protocol Secure) ডাটা এনক্রিপ্ট করে নিরাপত্তা নিশ্চিত করে।"
+                }
+            ];
+
+            const pool = (lang === 'bn') ? banglaPool : englishPool;
+
+            for (let i = 0; i < count; i++) {
+                const base = pool[i % pool.length];
+                const prefix = lang === 'bn' ? `[${topic}] প্রশ্ন ${i + 1}: ` : `[${topic}] Question ${i + 1}: `;
+                questions.push({
+                    id: 'q_' + (i + 1),
+                    num: i + 1,
+                    text: prefix + base.q,
+                    options: {
+                        A: base.a,
+                        B: base.b,
+                        C: base.c,
+                        D: base.d
+                    },
+                    correctAnswer: base.correct,
+                    explanation: base.explain
+                });
+            }
+
+            return questions;
+        }
+
+        function renderDraftQuestions() {
+            const container = document.getElementById('questions-draft-container');
+            if (draftQuestions.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">No questions currently in draft.</p>';
+                return;
+            }
+
+            let html = '';
+            draftQuestions.forEach((q, idx) => {
+                html += `
+                <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="font-bold text-white text-sm">
+                            <span class="text-brand-400">Q${idx + 1}.</span> ${escapeHtml(q.text)}
+                        </div>
+                        <div class="flex items-center space-x-1 flex-shrink-0">
+                            <button onclick="openEditQuestionModal(${idx})" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg">Edit</button>
+                            <button onclick="deleteDraftQuestion(${idx})" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300 pt-1">
+                        <div class="${q.correctAnswer === 'A' ? 'font-bold text-emerald-400 bg-emerald-500/10 p-1.5 rounded border border-emerald-500/30' : 'p-1.5'}">A. ${escapeHtml(q.options.A)}</div>
+                        <div class="${q.correctAnswer === 'B' ? 'font-bold text-emerald-400 bg-emerald-500/10 p-1.5 rounded border border-emerald-500/30' : 'p-1.5'}">B. ${escapeHtml(q.options.B)}</div>
+                        <div class="${q.correctAnswer === 'C' ? 'font-bold text-emerald-400 bg-emerald-500/10 p-1.5 rounded border border-emerald-500/30' : 'p-1.5'}">C. ${escapeHtml(q.options.C)}</div>
+                        <div class="${q.correctAnswer === 'D' ? 'font-bold text-emerald-400 bg-emerald-500/10 p-1.5 rounded border border-emerald-500/30' : 'p-1.5'}">D. ${escapeHtml(q.options.D)}</div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function deleteDraftQuestion(index) {
+            draftQuestions.splice(index, 1);
+            renderDraftQuestions();
+        }
+
+        function addNewBlankQuestion() {
+            const lang = document.getElementById('adm-language').value;
+            draftQuestions.push({
+                id: 'q_' + (draftQuestions.length + 1),
+                num: draftQuestions.length + 1,
+                text: lang === 'bn' ? "নতুন কাস্টম প্রশ্নের বর্ণনা" : "New Custom Question Text",
+                options: {
+                    A: lang === 'bn' ? "অপশন ক" : "Option A",
+                    B: lang === 'bn' ? "অপশন খ" : "Option B",
+                    C: lang === 'bn' ? "অপশন গ" : "Option C",
+                    D: lang === 'bn' ? "অপশন ঘ" : "Option D"
+                },
+                correctAnswer: "A",
+                explanation: lang === 'bn' ? "সঠিক উত্তরের কারণ ব্যাখ্যা..." : "Explanation for the correct choice..."
+            });
+            renderDraftQuestions();
+        }
+
+        function downloadDraftQuestionsJSON() {
+            if (draftQuestions.length === 0) {
+                showCustomModal({ title: "Download Failed", body: "No questions found in draft.", icon: "warning" });
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(draftQuestions, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "question_paper.json");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function exportResultsToCSV() {
+            if (submissionLogs.length === 0) {
+                showCustomModal({ title: "Export Unavailable", body: "No student exam submissions recorded yet.", icon: "warning" });
+                return;
+            }
+
+            let csvContent = "\uFEFF"; // UTF-8 BOM
+            csvContent += "Student Name,Roll Number,Exam Title,Score,Total,Percentage (%),Time Taken,Violations,Submitted At\n";
+
+            submissionLogs.forEach(log => {
+                csvContent += `"${log.studentName}","${log.studentRoll}","${log.examTitle}","${log.score}","${log.totalQuestions}","${log.percentage}%","${log.timeTaken}","${log.violations}","${log.submittedAt}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Examinee_Results_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function openEditQuestionModal(index) {
+            editingQuestionIndex = index;
+            const q = draftQuestions[index];
+            document.getElementById('edit-q-text').value = q.text;
+            document.getElementById('edit-opt-a').value = q.options.A;
+            document.getElementById('edit-opt-b').value = q.options.B;
+            document.getElementById('edit-opt-c').value = q.options.C;
+            document.getElementById('edit-opt-d').value = q.options.D;
+            document.getElementById('edit-q-correct').value = q.correctAnswer;
+            document.getElementById('edit-q-explain').value = q.explanation;
+
+            document.getElementById('edit-question-modal').classList.remove('hidden');
+        }
+
+        function closeEditQuestionModal() {
+            document.getElementById('edit-question-modal').classList.add('hidden');
+        }
+
+        function saveEditedQuestion() {
+            if (editingQuestionIndex === null) return;
+            draftQuestions[editingQuestionIndex] = {
+                id: draftQuestions[editingQuestionIndex].id,
+                num: editingQuestionIndex + 1,
+                text: document.getElementById('edit-q-text').value,
+                options: {
+                    A: document.getElementById('edit-opt-a').value,
+                    B: document.getElementById('edit-opt-b').value,
+                    C: document.getElementById('edit-opt-c').value,
+                    D: document.getElementById('edit-opt-d').value
+                },
+                correctAnswer: document.getElementById('edit-q-correct').value,
+                explanation: document.getElementById('edit-q-explain').value
+            };
+            closeEditQuestionModal();
+            renderDraftQuestions();
+        }
+
+        function publishCurrentExam() {
+            if (draftQuestions.length === 0) {
+                showCustomModal({ title: "Publish Failed", body: "No draft questions to publish.", icon: "warning" });
+                return;
+            }
+
+            const lang = document.getElementById('adm-language').value;
+            const subject = document.getElementById('adm-subject').value.trim() || 'General Subject';
+            const className = document.getElementById('adm-class').value.trim() || 'Grade 10';
+            const topic = document.getElementById('adm-topic').value.trim() || 'General Topic';
+            const duration = parseInt(document.getElementById('adm-duration').value) || 15;
+
+            const newExam = {
+                id: 'exam_' + Date.now(),
+                title: `${subject} - ${topic}`,
+                subject: subject,
+                className: className,
+                topic: topic,
+                language: lang,
+                difficulty: document.getElementById('adm-difficulty').value,
+                durationMinutes: duration,
+                createdAt: new Date().toISOString(),
+                questions: [...draftQuestions]
+            };
+
+            publishedExams.unshift(newExam);
+            saveExamsToStorage();
+
+            document.getElementById('ai-questions-editor').classList.add('hidden');
+            draftQuestions = [];
+
+            renderAdminStats();
+            renderStudentExamsList();
+
+            showCustomModal({
+                title: "Exam Published",
+                body: `"${newExam.title}" has been successfully published for students.`,
+                icon: "success"
+            });
+        }
+
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.addEventListener('copy', (e) => {
+            if (activeExamState && !activeExamState.isCompleted) e.preventDefault();
+        });
+        document.addEventListener('paste', (e) => {
+            if (activeExamState && !activeExamState.isCompleted) e.preventDefault();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && activeExamState && !activeExamState.isCompleted) {
+                activeExamState.tabSwitches = (activeExamState.tabSwitches || 0) + 1;
+                saveActiveSessionToStorage();
+
+                document.getElementById('tab-switch-badge').innerText = `Tab Switches: ${activeExamState.tabSwitches}/3`;
+
+                if (activeExamState.tabSwitches >= 3) {
+                    showCustomModal({
+                        title: "Security Violation!",
+                        body: "Maximum of 3 tab switches exceeded. Exam is auto-submitting.",
+                        icon: "warning",
+                        onConfirm: () => {
+                            autoSubmitExam('Violation Limit Exceeded');
+                        }
+                    });
+                } else {
+                    showCustomModal({
+                        title: "Warning!",
+                        body: `Tab switch detected! Total violations: ${activeExamState.tabSwitches}/3.`,
+                        icon: "warning"
+                    });
+                }
+            }
+        });
+
+        function promptStartExam(examId) {
+            pendingExamStartId = examId;
+            document.getElementById('input-student-name').value = '';
+            document.getElementById('input-student-roll').value = '';
+            document.getElementById('student-entry-modal').classList.remove('hidden');
+        }
+
+        function closeStudentEntryModal() {
+            document.getElementById('student-entry-modal').classList.add('hidden');
+            pendingExamStartId = null;
+        }
+
+        function confirmStartExamWithInfo() {
+            const name = document.getElementById('input-student-name').value.trim();
+            const roll = document.getElementById('input-student-roll').value.trim();
+
+            if (!name || !roll) {
+                showCustomModal({
+                    title: "Incomplete Information",
+                    body: "Please provide both Student Name and Roll Number.",
+                    icon: "warning"
+                });
+                return;
+            }
+
+            document.getElementById('student-entry-modal').classList.add('hidden');
+            startExamSession(pendingExamStartId, name, roll);
+        }
+
+        function startExamSession(examId, studentName, studentRoll) {
+            const exam = publishedExams.find(e => e.id === examId);
+            if (!exam) return;
+
+            const alreadySubmitted = submissionLogs.some(log => log.examId === examId && log.studentRoll === studentRoll);
+            if (alreadySubmitted) {
+                showCustomModal({
+                    title: "Already Submitted",
+                    body: `An exam submission already exists for Roll ${studentRoll}. Re-taking is not allowed.`,
+                    icon: "warning"
+                });
+                return;
+            }
+
+            const shuffledQuestions = exam.questions.map((q) => {
+                const keys = ['A', 'B', 'C', 'D'];
+                const shuffledKeys = [...keys].sort(() => Math.random() - 0.5);
+                
+                return {
+                    id: q.id,
+                    originalNum: q.num,
+                    text: q.text,
+                    optionsKeyMap: shuffledKeys,
+                    originalOptions: q.options,
+                    correctAnswer: q.correctAnswer,
+                    explanation: q.explanation
+                };
+            }).sort(() => Math.random() - 0.5);
+
+            const now = Date.now();
+            const totalDurationMs = exam.durationMinutes * 60 * 1000;
+
+            activeExamState = {
+                examId: exam.id,
+                examTitle: exam.title,
+                subject: exam.subject,
+                language: exam.language || 'en',
+                studentName: studentName,
+                studentRoll: studentRoll,
+                totalQuestions: exam.questions.length,
+                durationMinutes: exam.durationMinutes,
+                startTimeMs: now,
+                endTimeMs: now + totalDurationMs,
+                currentIndex: 0,
+                userAnswers: {},
+                tabSwitches: 0,
+                shuffledQuestions: shuffledQuestions,
+                isCompleted: false
+            };
+
+            saveActiveSessionToStorage();
+            requestFullScreenMode();
+            renderActiveExamCanvas();
+        }
+
+        function saveActiveSessionToStorage() {
+            if (activeExamState) {
+                localStorage.setItem('edu_active_exam_session', JSON.stringify(activeExamState));
+            } else {
+                localStorage.removeItem('edu_active_exam_session');
+            }
+        }
+
+        function resumeActiveExamSession() {
+            if (!activeExamState) return;
+            switchRole('student');
+            renderActiveExamCanvas();
+        }
+
+        function requestFullScreenMode() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            }
+        }
+
+        function renderActiveExamCanvas() {
+            document.getElementById('exam-list-container').classList.add('hidden');
+            document.getElementById('exam-result-view').classList.add('hidden');
+            document.getElementById('active-exam-canvas').classList.remove('hidden');
+
+            document.getElementById('exam-badge-subject').innerText = activeExamState.subject;
+            document.getElementById('exam-canvas-title').innerText = activeExamState.examTitle;
+            document.getElementById('exam-canvas-student-info').innerText = `${activeExamState.studentName} (Roll: ${activeExamState.studentRoll})`;
+            document.getElementById('tab-switch-badge').innerText = `Tab Switches: ${activeExamState.tabSwitches}/3`;
+
+            startSyncedTimer();
+            displayCurrentQuestion();
+        }
+
+        function startSyncedTimer() {
+            clearInterval(liveTimerInterval);
+
+            function updateTimer() {
+                const now = Date.now();
+                const remainingMs = activeExamState.endTimeMs - now;
+
+                if (remainingMs <= 0) {
+                    clearInterval(liveTimerInterval);
+                    document.getElementById('live-timer-display').innerText = "00:00";
+                    autoSubmitExam('Time Expired');
+                    return;
+                }
+
+                const totalSeconds = Math.floor(remainingMs / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+
+                document.getElementById('live-timer-display').innerText = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            updateTimer();
+            liveTimerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function displayCurrentQuestion() {
+            const idx = activeExamState.currentIndex;
+            const q = activeExamState.shuffledQuestions[idx];
+
+            document.getElementById('exam-canvas-progress').innerText = `Question ${idx + 1} / ${activeExamState.totalQuestions}`;
+            document.getElementById('q-number-header').innerText = `Question ${idx + 1}`;
+            document.getElementById('q-text-display').innerText = q.text;
+
+            const selectedAns = activeExamState.userAnswers[q.id];
+
+            let optionsHtml = '';
+            const labelsEn = ['A', 'B', 'C', 'D'];
+            const labelsBn = ['ক', 'খ', 'গ', 'ঘ'];
+            const isBangla = activeExamState.language === 'bn';
+
+            q.optionsKeyMap.forEach((key, displayIndex) => {
+                const optionLabel = isBangla ? labelsBn[displayIndex] : labelsEn[displayIndex];
+                const optionValueText = q.originalOptions[key];
+                const isSelected = selectedAns === key;
+
+                optionsHtml += `
+                <div onclick="selectAnswerOption('${q.id}', '${key}')" class="p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${isSelected ? 'bg-brand-500/10 border-brand-500 text-white' : 'bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-200'}">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-7 h-7 rounded-lg border font-bold text-xs flex items-center justify-center ${isSelected ? 'bg-brand-600 border-brand-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}">
+                            ${optionLabel}
+                        </div>
+                        <span class="text-sm font-medium">${escapeHtml(optionValueText)}</span>
+                    </div>
+                    ${isSelected ? '<i class="fa-solid fa-circle-check text-brand-400 text-base"></i>' : ''}
+                </div>`;
+            });
+
+            document.getElementById('q-options-container').innerHTML = optionsHtml;
+
+            document.getElementById('btn-prev-question').disabled = idx === 0;
+
+            if (idx === activeExamState.totalQuestions - 1) {
+                document.getElementById('btn-next-question').classList.add('hidden');
+                document.getElementById('btn-submit-exam').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next-question').classList.remove('hidden');
+                document.getElementById('btn-submit-exam').classList.add('hidden');
+            }
+        }
+
+        function selectAnswerOption(questionId, key) {
+            activeExamState.userAnswers[questionId] = key;
+            saveActiveSessionToStorage();
+            displayCurrentQuestion();
+        }
+
+        function navigateQuestion(delta) {
+            const newIndex = activeExamState.currentIndex + delta;
+            if (newIndex >= 0 && newIndex < activeExamState.totalQuestions) {
+                activeExamState.currentIndex = newIndex;
+                saveActiveSessionToStorage();
+                displayCurrentQuestion();
+            }
+        }
+
+        function promptSubmitConfirmation() {
+            showCustomModal({
+                title: "Submit Examination?",
+                body: "Are you sure you want to submit your answer sheet?",
+                type: "confirm",
+                confirmText: "Yes, Submit",
+                onConfirm: () => {
+                    autoSubmitExam('Manual Submit');
+                }
+            });
+        }
+
+        function autoSubmitExam(reason) {
+            clearInterval(liveTimerInterval);
+            activeExamState.isCompleted = true;
+
+            const timeTakenMs = Date.now() - activeExamState.startTimeMs;
+            const minutesTaken = Math.floor(timeTakenMs / 60000);
+            const secondsTaken = Math.floor((timeTakenMs % 60000) / 1000);
+            const formattedTimeTaken = `${minutesTaken}m ${secondsTaken}s`;
+
+            let correctCount = 0;
+            activeExamState.shuffledQuestions.forEach((q) => {
+                const userChoice = activeExamState.userAnswers[q.id];
+                if (userChoice === q.correctAnswer) {
+                    correctCount++;
+                }
+            });
+
+            const total = activeExamState.totalQuestions;
+            const wrongCount = total - correctCount;
+            const percentage = ((correctCount / total) * 100).toFixed(1);
+
+            const submissionRecord = {
+                id: 'sub_' + Date.now(),
+                studentName: activeExamState.studentName,
+                studentRoll: activeExamState.studentRoll,
+                examId: activeExamState.examId,
+                examTitle: activeExamState.examTitle,
+                score: correctCount,
+                totalQuestions: total,
+                percentage: percentage,
+                timeTaken: formattedTimeTaken,
+                violations: activeExamState.tabSwitches,
+                submittedAt: new Date().toLocaleString()
+            };
+
+            submissionLogs.unshift(submissionRecord);
+            saveLogsToStorage();
+
+            const completedState = { ...activeExamState, score: correctCount, wrong: wrongCount, percentage, formattedTimeTaken, submittedAt: submissionRecord.submittedAt };
+            localStorage.removeItem('edu_active_exam_session');
+            activeExamState = null;
+
+            renderResultView(completedState);
+            renderAdminStats();
+            renderAdminResultsTable();
+            renderStudentExamsList();
+        }
+
+        function renderResultView(state) {
+            document.getElementById('active-exam-canvas').classList.add('hidden');
+            document.getElementById('exam-result-view').classList.remove('hidden');
+
+            document.getElementById('res-exam-title').innerText = state.examTitle;
+            document.getElementById('res-submitted-info').innerText = `Student: ${state.studentName} (Roll: ${state.studentRoll}) - Submitted: ${state.submittedAt}`;
+            document.getElementById('res-score-number').innerText = `${state.score}/${state.totalQuestions}`;
+            document.getElementById('res-percent-number').innerText = `${state.percentage}%`;
+
+            document.getElementById('res-correct-count').innerText = state.score;
+            document.getElementById('res-wrong-count').innerText = state.wrong;
+            document.getElementById('res-time-taken').innerText = state.formattedTimeTaken;
+            document.getElementById('res-violations-count').innerText = state.tabSwitches;
+
+            let reviewHtml = '';
+            state.shuffledQuestions.forEach((q, idx) => {
+                const userChoiceKey = state.userAnswers[q.id];
+                const isCorrect = userChoiceKey === q.correctAnswer;
+
+                const userText = userChoiceKey ? q.originalOptions[userChoiceKey] : 'No answer provided';
+                const correctText = q.originalOptions[q.correctAnswer];
+
+                reviewHtml += `
+                <div class="p-5 rounded-2xl border ${isCorrect ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'} space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="font-bold text-white text-sm">
+                            <span>Q${idx + 1}.</span> ${escapeHtml(q.text)}
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isCorrect ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                            ${isCorrect ? '<i class="fa-solid fa-check mr-1"></i>Correct' : '<i class="fa-solid fa-xmark mr-1.5"></i>Incorrect'}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div class="p-2.5 rounded-xl ${isCorrect ? 'bg-emerald-500/20 text-emerald-200' : 'bg-rose-500/20 text-rose-200'}">
+                            <strong>Your Choice:</strong> ${escapeHtml(userText)}
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-200">
+                            <strong>Correct Answer:</strong> ${escapeHtml(correctText)}
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <strong class="text-white">Explanation:</strong> ${escapeHtml(q.explanation)}
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('review-questions-stack').innerHTML = reviewHtml;
+        }
+
+        function backToStudentExamsList() {
+            document.getElementById('exam-result-view').classList.add('hidden');
+            document.getElementById('exam-list-container').classList.remove('hidden');
+        }
+
+        function switchRole(role) {
+            if (role === 'admin' && !isAdminUnlocked) {
+                openAdminPassModal();
+                return;
+            }
+
+            activeRole = role;
+            const studentSec = document.getElementById('student-panel-section');
+            const adminSec = document.getElementById('admin-panel-section');
+
+            const navStudent = document.getElementById('nav-btn-student');
+            const navAdmin = document.getElementById('nav-btn-admin');
+
+            if (role === 'admin') {
+                studentSec.classList.add('hidden');
+                adminSec.classList.remove('hidden');
+                navAdmin.className = "px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-slate-800 text-white shadow-sm";
+                navStudent.className = "px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-white";
+            } else {
+                adminSec.classList.add('hidden');
+                studentSec.classList.remove('hidden');
+                navStudent.className = "px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-slate-800 text-white shadow-sm";
+                navAdmin.className = "px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-white";
+            }
+        }
+
+        function openAdminPassModal() {
+            document.getElementById('input-admin-passcode').value = '';
+            document.getElementById('admin-pass-error').classList.add('hidden');
+            document.getElementById('admin-passcode-modal').classList.remove('hidden');
+        }
+
+        function closeAdminPassModal() {
+            document.getElementById('admin-passcode-modal').classList.add('hidden');
+        }
+
+        function verifyAdminPasscode() {
+            const pin = document.getElementById('input-admin-passcode').value.trim();
+            if (pin === ADMIN_PIN) {
+                isAdminUnlocked = true;
+                closeAdminPassModal();
+                switchRole('admin');
+            } else {
+                document.getElementById('admin-pass-error').classList.remove('hidden');
+            }
+        }
+
+        function renderStudentExamsList() {
+            const container = document.getElementById('available-exams-grid');
+            document.getElementById('available-exams-count').innerText = `${publishedExams.length} Exams Available`;
+
+            if (publishedExams.length === 0) {
+                container.innerHTML = `
+                <div class="col-span-2 p-8 text-center bg-slate-900 rounded-2xl border border-slate-800">
+                    <p class="text-sm text-slate-400">No exams currently published.</p>
+                </div>`;
+                return;
+            }
+
+            let html = '';
+            publishedExams.forEach((exam) => {
+                const langBadge = exam.language === 'bn' ? 'Bengali' : 'English';
+                html += `
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-sm hover:border-slate-700 transition-all flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="px-2.5 py-1 bg-brand-500/10 text-brand-400 font-semibold text-[11px] rounded-lg border border-brand-500/20">${escapeHtml(exam.subject)}</span>
+                            <span class="text-xs text-slate-400 font-medium">${escapeHtml(exam.className)} (${langBadge})</span>
+                        </div>
+                        <h3 class="text-base font-bold text-white leading-snug">${escapeHtml(exam.title)}</h3>
+                        <p class="text-xs text-slate-400 mt-1">Topic: ${escapeHtml(exam.topic)}</p>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-3 text-xs text-slate-400 font-medium">
+                            <span><i class="fa-regular fa-clock mr-1"></i>${exam.durationMinutes} mins</span>
+                            <span>•</span>
+                            <span><i class="fa-regular fa-file-lines mr-1"></i>${exam.questions.length} Questions</span>
+                        </div>
+
+                        <button onclick="promptStartExam('${exam.id}')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all flex items-center">
+                            <i class="fa-solid fa-play mr-1.5"></i>Take Exam
+                        </button>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderAdminStats() {
+            document.getElementById('stat-total-exams').innerText = publishedExams.length;
+            document.getElementById('stat-total-submissions').innerText = submissionLogs.length;
+
+            if (submissionLogs.length > 0) {
+                const totalPct = submissionLogs.reduce((acc, curr) => acc + parseFloat(curr.percentage), 0);
+                const avg = (totalPct / submissionLogs.length).toFixed(1);
+                document.getElementById('stat-avg-score').innerText = `${avg}%`;
+
+                const totalViolations = submissionLogs.reduce((acc, curr) => acc + (curr.violations || 0), 0);
+                document.getElementById('stat-total-violations').innerText = totalViolations;
+            }
+        }
+
+        function renderAdminResultsTable() {
+            const tbody = document.getElementById('admin-results-table-body');
+            if (submissionLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-slate-500">No submission records recorded yet.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            submissionLogs.forEach(log => {
+                html += `
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="px-6 py-4 font-semibold text-white">${escapeHtml(log.studentName)}</td>
+                    <td class="px-6 py-4 font-mono text-brand-400">${escapeHtml(log.studentRoll || '-')}</td>
+                    <td class="px-6 py-4">${escapeHtml(log.examTitle)}</td>
+                    <td class="px-6 py-4 font-bold text-slate-200">${log.score}/${log.totalQuestions}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${parseFloat(log.percentage) >= 50 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                            ${log.percentage}%
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-400">${log.timeTaken}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${log.violations > 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400'}">
+                            ${log.violations} Violations
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-400 text-xs">${log.submittedAt}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.onload = function() {
+            initSystemState();
+        };
+    </script>
+</body>
+</html>
+
+### Key Changes & Features in English:
+- **UI & Interface Labels:** All navigation headers, labels, form inputs, buttons, metrics, and badges translated to clear, standard English terms.
+- **Language Switcher Support:** Allows generating and taking question papers in English or Bengali.
+- **Question Generation Engine & Starter Pools:** Replaced sample mock items with English questions and options, while maintaining option shuffling and explanation logic.
+- **Anti-Cheating Monitoring System:** Real-time visibility detection, right-click, context menu, copy/paste prevention, tab switch tracking (up to 3 limits), and auto-submission warnings in English.
+- **Modals & Dialogs:** Replaced default browser alerts with customized modals for student registration, optical paper scanning simulation, draft editing, and PIN unlocking (`19523`).
+- **Data Exporting:** Includes CSV result exporter and JSON question draft downloader with complete English dataset headers.
